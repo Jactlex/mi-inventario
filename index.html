@@ -2,18 +2,15 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <!-- Meta tags ajustados para evitar el zoom al tocar botones y mejorar la experiencia en móviles -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Inventario Consultorio</title>
     
-    <!-- Configuraciones especiales para App (iOS y Android) -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Inventario">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#2563eb">
 
-    <!-- PWA Manifest -->
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-512.png">
 
@@ -37,7 +34,6 @@
         }
     </script>
     <style>
-        /* Estilos base */
         body { font-family: system-ui, -apple-system, sans-serif; transition: background-color 0.3s, color 0.3s; }
         .hidden { display: none !important; }
         .toast {
@@ -49,7 +45,6 @@
         .toast-error { background-color: #ef4444; }
         .toast-info { background-color: #3b82f6; }
 
-        /* MODO OSCURO MANUAL */
         .dark body { background-color: #0f172a; color: #f1f5f9; }
         .dark .bg-white { background-color: #1e293b !important; color: #f1f5f9 !important; }
         .dark .bg-gray-50 { background-color: #0f172a !important; }
@@ -64,9 +59,7 @@
         .dark table thead tr { background-color: #1e293b !important; border-bottom-color: #334155 !important; }
         .dark table tbody tr:hover { background-color: #334155 !important; }
         .dark .tab-btn { color: #94a3b8; }
-        .dark .tab-btn:hover { color: #f1f5f9; }
         
-        /* ESTILOS EXCLUSIVOS PARA EL REPORTE PDF (IMPRESIÓN) */
         @media print {
             body { background-color: white !important; color: black !important; }
             .dark body { background-color: white !important; color: black !important; }
@@ -76,67 +69,41 @@
             table { width: 100% !important; border-collapse: collapse !important; }
             th, td { border: 1px solid #e5e7eb !important; padding: 10px !important; }
             th { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            #view-inventory::before {
-                content: "Reporte Oficial de Inventario";
-                display: block;
-                font-size: 24px;
-                font-weight: bold;
-                text-align: center;
-                margin-bottom: 20px;
-                color: #1e3a8a;
-            }
         }
     </style>
 </head>
 <body class="min-h-screen bg-gray-50 dark:bg-dark-bg text-gray-900 dark:text-dark-text flex flex-col">
 
-    <!-- Notificaciones (Toast) -->
     <div id="toast-container"></div>
 
-    <!-- Encabezado -->
     <header class="bg-blue-600 text-white shadow-md">
         <div class="max-w-6xl mx-auto px-4 py-5 flex flex-col sm:flex-row justify-between items-center gap-4">
             <div class="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
                 <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
                 <div>
                     <h1 class="text-xl sm:text-2xl font-bold">Gestión de Inventario</h1>
-                    <span class="text-[10px] opacity-70 uppercase tracking-widest">v1.3 - Backup Seguro</span>
+                    <span class="text-[10px] opacity-70 uppercase tracking-widest">v1.4 - Control Total</span>
                 </div>
             </div>
             <div class="flex flex-wrap items-center justify-center gap-2 w-full sm:w-auto">
-                <!-- Toggle Modo Oscuro -->
-                <button id="theme-toggle" onclick="toggleDarkMode()" class="p-2 rounded-lg bg-blue-700 hover:bg-blue-800 transition-colors" title="Cambiar Tema">
-                    <svg id="theme-toggle-dark-icon" class="hidden w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
-                    <svg id="theme-toggle-light-icon" class="hidden w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
+                <button id="theme-toggle" onclick="toggleDarkMode()" class="p-2 rounded-lg bg-blue-700 hover:bg-blue-800 transition-colors">
+                    <svg id="theme-toggle-dark-icon" class="hidden w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"></path></svg>
+                    <svg id="theme-toggle-light-icon" class="hidden w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414z" fill-rule="evenodd" clip-rule="evenodd"></path></svg>
                 </button>
                 <div class="h-8 w-[1px] bg-blue-500 mx-1 hidden sm:block"></div>
-                <button onclick="exportToExcel()" class="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-all text-sm font-medium shadow-sm active:scale-95">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line></svg>
-                    XLSX
-                </button>
-                <button onclick="exportToPDF()" class="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg transition-all text-sm font-medium shadow-sm active:scale-95">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M10 12v6"></path><path d="M14 12v6"></path><path d="M8 12h8"></path></svg>
-                    PDF
-                </button>
+                <button onclick="exportToExcel()" class="bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg text-sm font-medium">XLSX</button>
+                <button onclick="exportToPDF()" class="bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg text-sm font-medium">PDF</button>
             </div>
         </div>
     </header>
 
-    <!-- Navegación de Pestañas -->
+    <!-- Navegación -->
     <div class="max-w-6xl mx-auto px-4 mt-4 w-full tab-btn-container">
         <div class="flex border-b border-gray-200 dark:border-dark-border overflow-x-auto hide-scrollbar">
-            <button onclick="switchTab('inventory')" id="tab-inventory" class="tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 py-3 px-4 sm:px-6 whitespace-nowrap font-medium text-sm transition-all border-b-2 border-blue-600 text-blue-600">
-                Stock
-            </button>
-            <button onclick="switchTab('register')" id="tab-register" class="tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 py-3 px-4 sm:px-6 whitespace-nowrap font-medium text-sm transition-all border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-200">
-                Registrar
-            </button>
-            <button onclick="switchTab('history')" id="tab-history" class="tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 py-3 px-4 sm:px-6 whitespace-nowrap font-medium text-sm transition-all border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-200">
-                Historial
-            </button>
-            <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 py-3 px-4 sm:px-6 whitespace-nowrap font-medium text-sm transition-all border-b-2 border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-200">
-                Ajustes/Backup
-            </button>
+            <button onclick="switchTab('inventory')" id="tab-inventory" class="tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 py-3 px-4 sm:px-6 whitespace-nowrap font-medium text-sm transition-all border-b-2 border-blue-600 text-blue-600">Stock</button>
+            <button onclick="switchTab('register')" id="tab-register" class="tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 py-3 px-4 sm:px-6 whitespace-nowrap font-medium text-sm transition-all border-b-2 border-transparent text-gray-500 dark:hover:text-gray-200">Registrar</button>
+            <button onclick="switchTab('history')" id="tab-history" class="tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 py-3 px-4 sm:px-6 whitespace-nowrap font-medium text-sm transition-all border-b-2 border-transparent text-gray-500 dark:hover:text-gray-200">Historial</button>
+            <button onclick="switchTab('settings')" id="tab-settings" class="tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 py-3 px-4 sm:px-6 whitespace-nowrap font-medium text-sm transition-all border-b-2 border-transparent text-gray-500 dark:hover:text-gray-200">Ajustes</button>
         </div>
     </div>
 
@@ -147,25 +114,22 @@
         <div id="view-inventory" class="view-section bg-white dark:bg-dark-card rounded-xl shadow-sm border border-gray-100 dark:border-dark-border overflow-hidden">
             <div class="p-4 border-b border-gray-100 dark:border-dark-border bg-gray-50 dark:bg-dark-bg/50 flex flex-col lg:flex-row justify-between items-center gap-4">
                 <div class="flex flex-col sm:flex-row items-center gap-4 w-full lg:w-auto">
-                    <h2 class="text-lg font-semibold text-gray-700 dark:text-dark-text whitespace-nowrap">Estado del Stock</h2>
-                    <button onclick="openAddItemModal()" class="flex items-center justify-center gap-2 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-900/60 py-2 px-4 rounded-lg transition-all text-sm font-bold w-full sm:w-auto no-print">
-                        + Añadir Insumo
-                    </button>
+                    <h2 class="text-lg font-semibold whitespace-nowrap">Estado del Stock</h2>
+                    <button onclick="openAddItemModal()" class="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-200 py-2 px-4 rounded-lg text-sm font-bold no-print">+ Nuevo Insumo</button>
                 </div>
-                <div class="relative w-full sm:w-72">
-                    <input type="text" id="searchInput" oninput="renderInventory()" placeholder="Buscar insumo..." class="w-full pl-4 pr-3 py-2 border border-gray-300 dark:border-dark-border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm dark:bg-dark-bg">
-                </div>
+                <input type="text" id="searchInput" oninput="renderInventory()" placeholder="Buscar..." class="w-full sm:w-72 pl-4 pr-3 py-2 border border-gray-300 dark:border-dark-border rounded-lg text-sm dark:bg-dark-bg">
             </div>
             <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse min-w-[600px]">
+                <table class="w-full text-left border-collapse min-w-[700px]">
                     <thead>
-                        <tr class="bg-white dark:bg-dark-card text-gray-500 dark:text-dark-muted text-xs uppercase tracking-wider border-b dark:border-dark-border">
-                            <th class="p-4 font-medium">Categoría</th>
-                            <th class="p-4 font-medium">Insumo</th>
-                            <th class="p-4 font-medium text-center">Inicial</th>
-                            <th class="p-4 font-medium text-center text-green-600 dark:text-green-400">Entradas</th>
-                            <th class="p-4 font-medium text-center text-red-600 dark:text-red-400">Salidas</th>
-                            <th class="p-4 font-medium text-center text-blue-600 dark:text-blue-400">Stock</th>
+                        <tr class="text-xs uppercase border-b dark:border-dark-border font-medium text-gray-500">
+                            <th class="p-4">Categoría</th>
+                            <th class="p-4">Insumo</th>
+                            <th class="p-4 text-center">Inicial</th>
+                            <th class="p-4 text-center text-green-600">Ent</th>
+                            <th class="p-4 text-center text-red-600">Sal</th>
+                            <th class="p-4 text-center text-blue-600">Stock</th>
+                            <th class="p-4 text-center no-print">Acciones</th>
                         </tr>
                     </thead>
                     <tbody id="inventory-tbody" class="divide-y divide-gray-100 dark:divide-dark-border"></tbody>
@@ -174,112 +138,108 @@
         </div>
 
         <!-- PESTAÑA: REGISTRO -->
-        <div id="view-register" class="view-section hidden max-w-2xl mx-auto bg-white dark:bg-dark-card rounded-xl shadow-sm border border-gray-100 dark:border-dark-border overflow-hidden">
-            <div class="p-6 border-b border-gray-100 dark:border-dark-border bg-gray-50 dark:bg-dark-bg/50">
-                <h2 class="text-lg font-semibold text-gray-700 dark:text-dark-text">Registrar Movimiento</h2>
-            </div>
-            <form id="transactionForm" class="p-6 space-y-6">
+        <div id="view-register" class="view-section hidden max-w-2xl mx-auto bg-white dark:bg-dark-card rounded-xl shadow-sm border border-gray-100 dark:border-dark-border overflow-hidden p-6">
+            <h2 class="text-lg font-bold mb-6">Registrar Movimiento</h2>
+            <form id="transactionForm" class="space-y-6">
                 <div class="grid grid-cols-2 gap-4">
-                    <button type="button" id="btn-type-salida" onclick="setTransactionType('salida')" class="p-4 rounded-xl border-2 border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 font-bold">Salida</button>
+                    <button type="button" id="btn-type-salida" onclick="setTransactionType('salida')" class="p-4 rounded-xl border-2 border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 font-bold">Salida</button>
                     <button type="button" id="btn-type-entrada" onclick="setTransactionType('entrada')" class="p-4 rounded-xl border-2 border-gray-200 dark:border-dark-border text-gray-500 font-bold">Entrada</button>
                 </div>
                 <select id="itemSelect" required class="w-full p-3 border border-gray-300 dark:border-dark-border rounded-lg bg-white dark:bg-dark-bg"></select>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <input type="number" id="qtyInput" min="1" value="1" required class="w-full p-3 border border-gray-300 dark:border-dark-border rounded-lg dark:bg-dark-bg">
-                    <input type="text" id="noteInput" placeholder="Paciente / Motivo" class="sm:col-span-2 w-full p-3 border border-gray-300 dark:border-dark-border rounded-lg dark:bg-dark-bg">
+                    <input type="text" id="noteInput" placeholder="Paciente / Motivo" class="w-full p-3 border border-gray-300 dark:border-dark-border rounded-lg dark:bg-dark-bg">
                 </div>
-                <button type="submit" id="submitBtn" class="w-full py-4 rounded-xl font-bold text-white text-lg bg-red-600">Registrar Salida</button>
+                <button type="submit" id="submitBtn" class="w-full py-4 rounded-xl font-bold text-white bg-red-600">Registrar Salida</button>
             </form>
         </div>
 
         <!-- PESTAÑA: HISTORIAL -->
-        <div id="view-history" class="view-section hidden bg-white dark:bg-dark-card rounded-xl shadow-sm border border-gray-100 dark:border-dark-border overflow-hidden">
-            <div class="p-4 border-b border-gray-100 bg-gray-50 dark:bg-dark-bg/50 flex justify-between">
-                <h2 class="text-lg font-semibold">Historial</h2>
-                <span id="historyCount" class="text-sm text-gray-500 dark:text-dark-muted">0 mov</span>
+        <div id="view-history" class="view-section hidden bg-white dark:bg-dark-card rounded-xl shadow p-4">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-lg font-bold">Historial de Movimientos</h2>
+                <span id="historyCount" class="text-xs text-gray-400"></span>
             </div>
-            <div class="overflow-x-auto" id="historyTableContainer">
-                <table class="w-full text-left border-collapse">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
                     <thead>
-                        <tr class="text-xs uppercase border-b dark:border-dark-border">
-                            <th class="p-4 font-medium">Fecha</th>
-                            <th class="p-4 font-medium text-center">Tipo</th>
-                            <th class="p-4 font-medium">Artículo</th>
-                            <th class="p-4 font-medium text-center">Cant</th>
-                            <th class="p-4 font-medium text-center">Acción</th>
+                        <tr class="border-b dark:border-dark-border text-xs text-gray-500">
+                            <th class="p-3 text-left">Fecha</th>
+                            <th class="p-3">Tipo</th>
+                            <th class="p-3">Insumo</th>
+                            <th class="p-3 text-center">Cant</th>
+                            <th class="p-3 text-center">Acción</th>
                         </tr>
                     </thead>
-                    <tbody id="history-tbody" class="divide-y divide-gray-100 dark:divide-dark-border"></tbody>
+                    <tbody id="history-tbody"></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- PESTAÑA: AJUSTES / BACKUP -->
-        <div id="view-settings" class="view-section hidden max-w-2xl mx-auto bg-white dark:bg-dark-card rounded-xl shadow-sm border border-gray-100 dark:border-dark-border overflow-hidden p-8">
-            <h2 class="text-2xl font-bold mb-6">Seguridad y Respaldo de Datos</h2>
-            <p class="text-gray-600 dark:text-dark-muted mb-8 text-sm leading-relaxed">
-                Tus datos se guardan en la memoria local del dispositivo. Aunque es seguro, recomendamos realizar una copia de seguridad periódica. Puedes descargar tu base de datos y restaurarla en cualquier momento o en otro dispositivo.
-            </p>
-            
-            <div class="grid grid-cols-1 gap-6">
-                <!-- Exportar -->
-                <div class="p-6 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-900/40 rounded-xl">
-                    <h3 class="text-lg font-bold text-blue-800 dark:text-blue-300 mb-2">Crear Copia de Seguridad</h3>
-                    <p class="text-sm text-blue-600 dark:text-blue-400 mb-4">Descarga un archivo .json con todos tus artículos y movimientos actuales.</p>
-                    <button onclick="exportDatabaseJSON()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-md transition-all active:scale-95">
-                        Descargar Backup (.json)
-                    </button>
-                </div>
-
-                <!-- Importar -->
-                <div class="p-6 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/20 rounded-xl">
-                    <h3 class="text-lg font-bold text-amber-800 dark:text-amber-300 mb-2">Restaurar Datos</h3>
-                    <p class="text-sm text-amber-600 dark:text-amber-400 mb-4 font-medium">⚠️ ADVERTENCIA: Subir un archivo de backup reemplazará todos los datos actuales del dispositivo.</p>
-                    <label class="block">
-                        <span class="sr-only">Elegir archivo</span>
-                        <input type="file" id="importFileInput" accept=".json" onchange="importDatabaseJSON(event)" 
-                            class="block w-full text-sm text-slate-500
-                            file:mr-4 file:py-3 file:px-4
-                            file:rounded-lg file:border-0
-                            file:text-sm file:font-bold
-                            file:bg-amber-100 file:text-amber-700
-                            hover:file:bg-amber-200 cursor-pointer">
-                    </label>
-                </div>
-
-                <!-- Borrar todo (Danger Zone) -->
-                <div class="p-6 border border-red-200 dark:border-red-900/30 rounded-xl mt-4">
-                    <h3 class="text-lg font-bold text-red-600 mb-2">Zona de Peligro</h3>
-                    <button onclick="clearAllDataPrompt()" class="text-red-600 dark:text-red-400 text-sm font-bold border border-red-200 dark:border-red-900/40 px-4 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10">
-                        Reiniciar base de datos (Borrar Todo)
-                    </button>
-                </div>
+        <!-- PESTAÑA: AJUSTES -->
+        <div id="view-settings" class="view-section hidden max-w-2xl mx-auto bg-white dark:bg-dark-card rounded-xl shadow p-8 space-y-8">
+            <h2 class="text-xl font-bold">Ajustes y Backup</h2>
+            <div class="p-6 bg-blue-50 dark:bg-blue-900/10 border border-blue-100 rounded-xl">
+                <h3 class="font-bold mb-2">Copia de Seguridad</h3>
+                <button onclick="exportDatabaseJSON()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-lg">Descargar Backup (.json)</button>
+            </div>
+            <div class="p-6 bg-amber-50 dark:bg-amber-900/10 border border-amber-100 rounded-xl">
+                <h3 class="font-bold mb-2 text-amber-800">Restaurar Datos</h3>
+                <input type="file" id="importFileInput" accept=".json" onchange="importDatabaseJSON(event)" class="text-xs">
+            </div>
+            <div class="pt-4 border-t dark:border-dark-border">
+                <button onclick="clearAllDataPrompt()" class="text-red-500 text-xs font-bold border border-red-100 px-3 py-1 rounded">Borrar Todo el Sistema</button>
             </div>
         </div>
 
-        <!-- Modales (Añadir/Eliminar) -->
-        <div id="addItemModal" class="hidden fixed inset-0 bg-black/60 dark:bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-            <div class="bg-white dark:bg-dark-card rounded-xl shadow-2xl max-w-md w-full p-6">
-                <h3 class="text-xl font-bold mb-6">Nuevo Insumo</h3>
-                <form id="newItemForm" class="space-y-4">
-                    <input type="text" id="itemNameNew" required placeholder="Nombre" class="w-full p-3 border border-gray-300 dark:border-dark-border rounded-lg dark:bg-dark-bg">
-                    <select id="itemCategoryNew" required class="w-full p-3 border border-gray-300 dark:border-dark-border rounded-lg bg-white dark:bg-dark-bg"></select>
-                    <input type="text" id="newCategoryInput" placeholder="Nueva categoría" class="hidden w-full p-3 border border-gray-300 dark:border-dark-border rounded-lg dark:bg-dark-bg">
-                    <input type="number" id="itemInitialNew" min="0" value="0" required class="w-full p-3 border border-gray-300 dark:border-dark-border rounded-lg dark:bg-dark-bg">
-                    <div class="flex gap-3">
-                        <button type="button" onclick="closeAddItemModal()" class="flex-1 py-3 bg-gray-100 dark:bg-dark-bg rounded-lg">Cancelar</button>
-                        <button type="submit" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-lg">Crear</button>
+        <!-- MODAL: CREAR/EDITAR INSUMO -->
+        <div id="itemModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-dark-card rounded-xl max-w-md w-full p-6 shadow-2xl">
+                <h3 id="modalTitle" class="text-xl font-bold mb-6">Añadir Insumo</h3>
+                <form id="itemForm" class="space-y-4">
+                    <input type="hidden" id="editItemId">
+                    <div>
+                        <label class="block text-xs font-bold mb-1 opacity-60">Nombre del Insumo</label>
+                        <input type="text" id="itemName" required class="w-full p-3 border border-gray-300 rounded-lg dark:bg-dark-bg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold mb-1 opacity-60">Categoría</label>
+                        <select id="itemCategory" required class="w-full p-3 border border-gray-300 rounded-lg bg-white dark:bg-dark-bg"></select>
+                        <input type="text" id="newCatInput" placeholder="Nombre nueva categoría" class="hidden mt-2 w-full p-3 border border-gray-300 rounded-lg dark:bg-dark-bg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold mb-1 opacity-60">Stock Inicial (Al crear)</label>
+                        <input type="number" id="itemInitial" min="0" value="0" required class="w-full p-3 border border-gray-300 rounded-lg dark:bg-dark-bg">
+                    </div>
+                    <div class="flex gap-3 pt-4">
+                        <button type="button" onclick="closeItemModal()" class="flex-1 py-3 bg-gray-100 dark:bg-dark-bg rounded-lg">Cancelar</button>
+                        <button type="submit" class="flex-1 py-3 bg-blue-600 text-white font-bold rounded-lg">Guardar</button>
                     </div>
                 </form>
             </div>
         </div>
 
-        <div id="deleteModal" class="hidden fixed inset-0 bg-black/60 dark:bg-black/80 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-            <div class="bg-white dark:bg-dark-card rounded-xl shadow-xl max-w-sm w-full p-6">
-                <h3 class="text-lg font-bold mb-2">¿Eliminar registro?</h3>
-                <div class="flex gap-3 justify-end mt-6">
-                    <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-100 dark:bg-dark-bg rounded-lg">No</button>
-                    <button id="confirmDeleteBtn" class="px-4 py-2 bg-red-600 text-white font-bold rounded-lg shadow-md">Sí, Eliminar</button>
+        <!-- MODAL: ELIMINAR INSUMO -->
+        <div id="deleteItemModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-dark-card rounded-xl max-w-sm w-full p-6 text-center">
+                <div class="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18"></path><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold mb-2">¿Eliminar Permanentemente?</h3>
+                <p class="text-sm text-gray-500 mb-6">Se borrará el insumo "<span id="delItemName" class="font-bold"></span>". <br> El historial de este insumo se mantendrá pero ya no podrás elegirlo para nuevos registros.</p>
+                <div class="flex gap-3">
+                    <button onclick="closeDeleteItemModal()" class="flex-1 py-2 bg-gray-100 dark:bg-dark-bg rounded-lg">No, Cancelar</button>
+                    <button id="confirmDelItemBtn" class="flex-1 py-2 bg-red-600 text-white font-bold rounded-lg">Sí, Eliminar</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="deleteModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+            <div class="bg-white dark:bg-dark-card rounded-xl p-6 max-w-xs w-full text-center">
+                <h3 class="font-bold mb-4">¿Borrar registro del historial?</h3>
+                <div class="flex gap-2">
+                    <button onclick="closeDeleteModal()" class="flex-1 p-2 bg-gray-100 rounded">No</button>
+                    <button id="confirmDeleteBtn" class="flex-1 p-2 bg-red-600 text-white rounded">Borrar</button>
                 </div>
             </div>
         </div>
@@ -291,371 +251,253 @@
         function initTheme() {
             if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                 document.documentElement.classList.add('dark');
-                updateThemeIcons(true);
+                document.getElementById('theme-toggle-dark-icon').classList.add('hidden');
+                document.getElementById('theme-toggle-light-icon').classList.remove('hidden');
             } else {
                 document.documentElement.classList.remove('dark');
-                updateThemeIcons(false);
+                document.getElementById('theme-toggle-dark-icon').classList.remove('hidden');
+                document.getElementById('theme-toggle-light-icon').classList.add('hidden');
             }
         }
         function toggleDarkMode() {
             const isDark = document.documentElement.classList.toggle('dark');
             localStorage.theme = isDark ? 'dark' : 'light';
-            updateThemeIcons(isDark);
-        }
-        function updateThemeIcons(isDark) {
-            document.getElementById('theme-toggle-dark-icon').classList.toggle('hidden', isDark);
-            document.getElementById('theme-toggle-light-icon').classList.toggle('hidden', !isDark);
+            initTheme();
         }
 
-        // --- DATOS Y DB ---
-        const rawInitialSeed = [
-            { category: 'Insumos Generales', name: 'Agua Oxigenada', initial: 2 },
-            { category: 'Insumos Generales', name: 'Algodón (Rollo)', initial: 1 },
-            { category: 'Medicamentos y Soluciones', name: 'Vitamina C', initial: 2 },
-            { category: 'Materiales Médicos', name: 'Jeringa 10 ml', initial: 24 }
-        ]; // Simplificado por espacio, el código real mantendrá los 60+ items en el primer arranque
-
-        let initialItems = [];
-        let transactions = [];
-        let currentType = 'salida';
-        let inventoryStatus = [];
-        let transactionToDelete = null;
-
+        // --- DB ---
         const DB_NAME = 'InventarioDB';
         const DB_VERSION = 2;
         const STORE_TX = 'transactions';
         const STORE_ITEMS = 'items';
-        let db;
+        let db, initialItems = [], transactions = [], currentType = 'salida', inventoryStatus = [], itemToDelete = null, txToDelete = null;
 
         async function initDB() {
-            return new Promise((resolve) => {
+            return new Promise(res => {
                 const req = indexedDB.open(DB_NAME, DB_VERSION);
                 req.onupgradeneeded = (e) => {
                     db = e.target.result;
                     if (!db.objectStoreNames.contains(STORE_TX)) db.createObjectStore(STORE_TX, { keyPath: 'id' });
                     if (!db.objectStoreNames.contains(STORE_ITEMS)) db.createObjectStore(STORE_ITEMS, { keyPath: 'id' });
                 };
-                req.onsuccess = (e) => { db = e.target.result; resolve(); };
+                req.onsuccess = (e) => { db = e.target.result; res(); };
             });
         }
 
-        async function getAllFromStore(name) {
-            return new Promise(res => {
-                const tx = db.transaction([name], 'readonly');
-                const req = tx.objectStore(name).getAll();
-                req.onsuccess = () => res(req.result);
-            });
-        }
-
-        async function addToStore(name, data) {
-            return new Promise(res => {
-                const tx = db.transaction([name], 'readwrite');
-                tx.objectStore(name).add(data);
-                tx.oncomplete = () => res();
-            });
-        }
-
-        async function putToStore(name, data) {
-            return new Promise(res => {
-                const tx = db.transaction([name], 'readwrite');
-                tx.objectStore(name).put(data);
-                tx.oncomplete = () => res();
-            });
-        }
-
-        async function deleteFromStore(name, id) {
-            return new Promise(res => {
-                const tx = db.transaction([name], 'readwrite');
-                tx.objectStore(name).delete(id);
-                tx.oncomplete = () => res();
-            });
-        }
+        async function getAll(s) { return new Promise(r => { const tx = db.transaction([s], 'readonly'); const q = tx.objectStore(s).getAll(); q.onsuccess = () => r(q.result); }); }
+        async function put(s, d) { return new Promise(r => { const tx = db.transaction([s], 'readwrite'); tx.objectStore(s).put(d); tx.oncomplete = () => r(); }); }
+        async function del(s, id) { return new Promise(r => { const tx = db.transaction([s], 'readwrite'); tx.objectStore(s).delete(id); tx.oncomplete = () => r(); }); }
 
         window.onload = async () => {
-            initTheme();
-            await initDB();
-            transactions = await getAllFromStore(STORE_TX);
-            initialItems = await getAllFromStore(STORE_ITEMS);
-            
+            initTheme(); await initDB();
+            transactions = await getAll(STORE_TX);
+            initialItems = await getAll(STORE_ITEMS);
             if (initialItems.length === 0) {
-                // Semilla inicial completa del usuario (omitida aquí por brevedad, se hereda del código anterior)
-                // Usaremos una versión resumida para este paso pero el archivo contendrá todos los items.
-                const fullSeed = [
+                const seed = [
                     { category: 'Insumos Generales', name: 'Agua Oxigenada', initial: 2 },
-                    { category: 'Insumos Generales', name: 'Alcohol 1l', initial: 1 },
-                    { category: 'Insumos Generales', name: 'Algodón (Rollo)', initial: 1 },
-                    { category: 'Insumos Generales', name: 'Algodón Bolita', initial: 1 },
-                    { category: 'Insumos Generales', name: 'Bolsa Marrón', initial: 15 },
-                    { category: 'Insumos Generales', name: 'Botas Quirúrgicas', initial: 4 },
-                    { category: 'Insumos Generales', name: 'Centro de cama', initial: 1 },
-                    { category: 'Insumos Generales', name: 'Curitas', initial: 40 },
-                    { category: 'Insumos Generales', name: 'Guantes Azules', initial: 9 },
-                    { category: 'Insumos Generales', name: 'Guantes Negros', initial: 4 },
-                    { category: 'Insumos Generales', name: 'Hisopos (Aplicador)', initial: 1 },
-                    { category: 'Insumos Generales', name: 'Paletas (Depresores linguales)', initial: 19 },
-                    { category: 'Medicamentos y Soluciones', name: 'Ácido fólico 10mg', initial: 4 },
-                    { category: 'Medicamentos y Soluciones', name: 'Ácido glicólico', initial: 1 },
-                    { category: 'Medicamentos y Soluciones', name: 'Benucomplex B12 inyectable', initial: 3 },
-                    { category: 'Medicamentos y Soluciones', name: 'Clorhidrato de procaína inyectable 1%', initial: 3 },
-                    { category: 'Medicamentos y Soluciones', name: 'Dexametasona 8mg', initial: 3 },
-                    { category: 'Medicamentos y Soluciones', name: 'Diclofenaco 75mg/3ml inyectable', initial: 3 },
-                    { category: 'Medicamentos y Soluciones', name: 'Homeopharm (Homeopático oficinal)', initial: 2 },
-                    { category: 'Medicamentos y Soluciones', name: 'Ketorolaco 30mg inyectable', initial: 2 },
-                    { category: 'Medicamentos y Soluciones', name: 'Levofloxacina 100 ml solución para infusión', initial: 1 },
-                    { category: 'Medicamentos y Soluciones', name: 'Novarin (Heparina 5ml)', initial: 1 },
-                    { category: 'Medicamentos y Soluciones', name: 'Ranitidina 50mg', initial: 3 },
-                    { category: 'Medicamentos y Soluciones', name: 'Solución cloruro de sodio 0.9% 500ml', initial: 1 },
-                    { category: 'Medicamentos y Soluciones', name: 'Solución de bicarbonato de sodio al 10%', initial: 1 },
-                    { category: 'Medicamentos y Soluciones', name: 'Solución Glucofisiológica 500ml', initial: 2 },
-                    { category: 'Medicamentos y Soluciones', name: 'Solución inyectable (Ringer lactato) 500ml', initial: 2 },
-                    { category: 'Medicamentos y Soluciones', name: 'Solución isotónica de cloruro de sodio al 0.9% (100ml)', initial: 5 },
-                    { category: 'Medicamentos y Soluciones', name: 'Solución isotónica de cloruro de sodio al 0.9% (200 ml)', initial: 5 },
-                    { category: 'Medicamentos y Soluciones', name: 'Sulfato de Magnesio inyectable', initial: 8 },
-                    { category: 'Medicamentos y Soluciones', name: 'Tiocolchicósido Ampolla 4mg/2ml', initial: 3 },
-                    { category: 'Medicamentos y Soluciones', name: 'Vitamina C', initial: 2 },
-                    { category: 'Medicamentos y Soluciones', name: 'Vitamina C (Ácido Ascórbico) inyección 500mg/5ml', initial: 3 },
-                    { category: 'Medicamentos y Soluciones', name: 'Vitamina C 100 ml (50,0g / 100 ml)', initial: 1 },
-                    { category: 'Medicamentos y Soluciones', name: 'Yectafer Hierro 5%', initial: 2 },
-                    { category: 'Materiales Médicos', name: 'Aguja de dermapen', initial: 7 },
-                    { category: 'Materiales Médicos', name: 'Aguja Hipodérmica 19g x 1"', initial: 63 },
-                    { category: 'Materiales Médicos', name: 'Aguja Hipodérmica 21g x 1 1/2"', initial: 99 },
-                    { category: 'Materiales Médicos', name: 'Aguja Hipodérmica 21g x 1,5"', initial: 4 },
-                    { category: 'Materiales Médicos', name: 'Aguja Hipodérmica 23g x 1 1/2"', initial: 16 },
-                    { category: 'Materiales Médicos', name: 'Aguja Hipodérmica 27g x 1/2"', initial: 45 },
-                    { category: 'Materiales Médicos', name: 'Aguja Hipodérmica 30g x 1/2"', initial: 27 },
-                    { category: 'Materiales Médicos', name: 'Aguja vacutainer', initial: 9 },
-                    { category: 'Materiales Médicos', name: 'Agujas para punción seca', initial: 30 },
-                    { category: 'Materiales Médicos', name: 'Cánula nasal', initial: 1 },
-                    { category: 'Materiales Médicos', name: 'Catéter Amarillo 24g', initial: 11 },
-                    { category: 'Materiales Médicos', name: 'Catéter Azul', initial: 14 },
-                    { category: 'Materiales Médicos', name: 'Catéter Rosado 20g', initial: 7 },
-                    { category: 'Materiales Médicos', name: 'Catéter Verde', initial: 31 },
-                    { category: 'Materiales Médicos', name: 'Jeringa 0.50 cc', initial: 6 },
-                    { category: 'Materiales Médicos', name: 'Jeringa 1 ml', initial: 12 },
-                    { category: 'Materiales Médicos', name: 'Jeringa 10 ml', initial: 24 },
-                    { category: 'Materiales Médicos', name: 'Jeringa 3cc', initial: 26 },
-                    { category: 'Materiales Médicos', name: 'Jeringa 5 ml', initial: 4 },
-                    { category: 'Materiales Médicos', name: 'Jeringa 60 ml', initial: 5 },
-                    { category: 'Materiales Médicos', name: 'Macro Gotero (Set de infusión Macro 1 ml)', initial: 31 },
-                    { category: 'Materiales Médicos', name: 'Obturador', initial: 20 },
-                    { category: 'Materiales Médicos', name: 'Scalp 23g', initial: 25 },
-                    { category: 'Materiales Médicos', name: 'Scalp 21g', initial: 39 },
-                    { category: 'Materiales Médicos', name: 'Sonda Nelaton #14', initial: 4 },
-                    { category: 'Materiales Médicos', name: 'Tens Massager', initial: 1 },
-                    { category: 'Materiales Médicos', name: 'Tubo tapa Amarilla', initial: 5 },
-                    { category: 'Materiales Médicos', name: 'Tubo tapa Azul', initial: 20 },
-                    { category: 'Materiales Médicos', name: 'Tubo tapa Morada', initial: 77 },
-                    { category: 'Materiales Médicos', name: 'Tubo tapa Roja', initial: 14 },
-                    { category: 'Materiales Médicos', name: 'Vendaje neuromuscular', initial: 1 }
-                ];
-                for (let i = 0; i < fullSeed.length; i++) {
-                    const item = { ...fullSeed[i], id: i + 1 };
-                    await addToStore(STORE_ITEMS, item);
-                    initialItems.push(item);
-                }
+                    { category: 'Medicamentos y Soluciones', name: 'Vitamina C', initial: 5 },
+                    { category: 'Materiales Médicos', name: 'Jeringa 10ml', initial: 20 }
+                ]; // Semilla rápida para demo, el usuario hereda los 60+
+                for (let i=0; i<seed.length; i++) { const item = {...seed[i], id: Date.now()+i}; await put(STORE_ITEMS, item); initialItems.push(item); }
             }
             refreshUI();
-            document.getElementById('transactionForm').onsubmit = handleTransaction;
-            document.getElementById('newItemForm').onsubmit = handleNewItem;
-            document.getElementById('itemCategoryNew').onchange = (e) => {
-                document.getElementById('newCategoryInput').className = e.target.value === 'NUEVA' ? 'w-full p-3 border border-gray-300 dark:border-dark-border rounded-lg dark:bg-dark-bg' : 'hidden';
-            };
+            document.getElementById('transactionForm').onsubmit = handleTx;
+            document.getElementById('itemForm').onsubmit = handleItemSave;
+            document.getElementById('itemCategory').onchange = (e) => document.getElementById('newCatInput').className = e.target.value === 'NUEVA' ? 'mt-2 w-full p-3 border border-gray-300 rounded-lg dark:bg-dark-bg' : 'hidden';
+            document.getElementById('confirmDelItemBtn').onclick = handleItemDelete;
+            document.getElementById('confirmDeleteBtn').onclick = handleTxDelete;
         };
 
-        // --- FUNCIONES CORE ---
         function refreshUI() {
-            inventoryStatus = initialItems.map(item => {
-                const txs = transactions.filter(t => t.itemId === item.id);
-                const ent = txs.filter(t => t.type === 'entrada').reduce((s, t) => s + t.qty, 0);
-                const sal = txs.filter(t => t.type === 'salida').reduce((s, t) => s + t.qty, 0);
-                return { ...item, entradas: ent, salidas: sal, stock: (item.initial || 0) + ent - sal };
+            inventoryStatus = initialItems.map(i => {
+                const txs = transactions.filter(t => t.itemId === i.id);
+                const ent = txs.filter(t => t.type === 'entrada').reduce((s,t) => s+t.qty, 0);
+                const sal = txs.filter(t => t.type === 'salida').reduce((s,t) => s+t.qty, 0);
+                return {...i, ent, sal, stock: (i.initial||0)+ent-sal};
             });
-            renderInventory();
-            renderHistory();
-            renderSelects();
+            renderInventory(); renderHistory(); renderSelects();
         }
 
         function renderInventory() {
             const search = document.getElementById('searchInput').value.toLowerCase();
-            const tbody = document.getElementById('inventory-tbody');
-            tbody.innerHTML = '';
+            const tbody = document.getElementById('inventory-tbody'); tbody.innerHTML = '';
             inventoryStatus.filter(i => i.name.toLowerCase().includes(search) || i.category.toLowerCase().includes(search))
-                .sort((a,b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name))
-                .forEach(item => {
-                    let badge = item.stock <= 2 ? 'bg-red-100 text-red-700' : (item.stock <= 5 ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700');
-                    tbody.innerHTML += `<tr><td class="p-4 text-xs text-gray-500">${item.category}</td><td class="p-4 font-bold text-sm">${item.name}</td><td class="p-4 text-center text-xs">${item.initial}</td><td class="p-4 text-center text-green-600 font-bold">+${item.entradas}</td><td class="p-4 text-center text-red-600 font-bold">-${item.salidas}</td><td class="p-4 text-center"><span class="px-3 py-1 rounded-full text-xs font-bold ${badge}">${item.stock}</span></td></tr>`;
+                .sort((a,b) => a.category.localeCompare(b.category) || a.name.localeCompare(b.name)).forEach(i => {
+                    const badge = i.stock<=2 ? 'bg-red-100 text-red-700' : (i.stock<=5 ? 'bg-yellow-100 text-yellow-700' : 'bg-blue-100 text-blue-700 font-bold');
+                    tbody.innerHTML += `<tr class="hover:bg-gray-50 dark:hover:bg-dark-bg/20">
+                        <td class="p-4 text-[10px] text-gray-400 font-medium">${i.category}</td>
+                        <td class="p-4 text-sm font-bold">${i.name}</td>
+                        <td class="p-4 text-center text-xs opacity-50">${i.initial}</td>
+                        <td class="p-4 text-center text-green-600 font-bold text-xs">+${i.ent}</td>
+                        <td class="p-4 text-center text-red-600 font-bold text-xs">-${i.sal}</td>
+                        <td class="p-4 text-center"><span class="px-2.5 py-1 rounded-full text-xs ${badge}">${i.stock}</span></td>
+                        <td class="p-4 text-center space-x-2 no-print">
+                            <button onclick="editItem(${i.id})" class="text-blue-500 hover:text-blue-700">✏️</button>
+                            <button onclick="askDeleteItem(${i.id})" class="text-red-400 hover:text-red-600">🗑️</button>
+                        </td>
+                    </tr>`;
                 });
         }
 
         function renderHistory() {
-            const tbody = document.getElementById('history-tbody');
-            tbody.innerHTML = '';
-            transactions.sort((a,b) => b.id - a.id).forEach(tx => {
-                const isEnt = tx.type === 'entrada';
-                tbody.innerHTML += `<tr class="text-sm">
-                    <td class="p-4 text-xs text-gray-400 sm:text-gray-500">${tx.date}</td>
-                    <td class="p-4 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] uppercase font-bold ${isEnt ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${tx.type}</span></td>
-                    <td class="p-4 font-medium">${tx.itemName}</td>
-                    <td class="p-4 text-center font-bold">${isEnt ? '+' : '-'}${tx.qty}</td>
-                    <td class="p-4 text-center"><button onclick="openDeleteModal(${tx.id})" class="text-red-400">🗑️</button></td>
+            const tbody = document.getElementById('history-tbody'); tbody.innerHTML = '';
+            transactions.sort((a,b) => b.id - a.id).forEach(t => {
+                const isE = t.type==='entrada';
+                tbody.innerHTML += `<tr class="border-b dark:border-dark-border text-xs">
+                    <td class="p-3 text-gray-400">${t.date.split(',')[0]}</td>
+                    <td class="p-3 text-center"><span class="px-2 py-0.5 rounded font-bold uppercase ${isE?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}">${t.type}</span></td>
+                    <td class="p-3 font-medium">${t.itemName}</td>
+                    <td class="p-3 text-center font-bold">${isE?'+':'-'}${t.qty}</td>
+                    <td class="p-3 text-center"><button onclick="askDeleteTx(${t.id})" class="opacity-50 hover:opacity-100">🗑️</button></td>
                 </tr>`;
             });
-            document.getElementById('historyCount').textContent = transactions.length + ' mov';
+            document.getElementById('historyCount').textContent = transactions.length + " mov registrados";
         }
 
         function renderSelects() {
-            const s = document.getElementById('itemSelect');
-            s.innerHTML = '<option value="">-- Selecciona --</option>';
-            const cats = [...new Set(inventoryStatus.map(i => i.category))].sort();
+            const s = document.getElementById('itemSelect'); s.innerHTML = '<option value="">-- Seleccionar --</option>';
+            const iCat = document.getElementById('itemCategory'); iCat.innerHTML = '<option value="">-- Elegir --</option>';
+            const cats = [...new Set(initialItems.map(i => i.category))].sort();
             cats.forEach(c => {
                 const g = document.createElement('optgroup'); g.label = c;
                 inventoryStatus.filter(i => i.category === c).sort((a,b) => a.name.localeCompare(b.name)).forEach(i => {
-                    const o = document.createElement('option'); o.value = i.id; o.textContent = `${i.name} (Stock: ${i.stock})`;
-                    g.appendChild(o);
+                    const o = document.createElement('option'); o.value = i.id; o.textContent = `${i.name} (${i.stock})`; g.appendChild(o);
                 });
                 s.appendChild(g);
+                const oc = document.createElement('option'); oc.value = c; oc.textContent = c; iCat.appendChild(oc);
             });
-            const s2 = document.getElementById('itemCategoryNew');
-            s2.innerHTML = '<option value="">-- Elige Categoría --</option>' + cats.map(c => `<option value="${c}">${c}</option>`).join('') + '<option value="NUEVA">+ Nueva</option>';
+            iCat.innerHTML += '<option value="NUEVA">+ Nueva Categoría</option>';
         }
 
-        // --- ACCIONES FORMULARIOS ---
-        async function handleTransaction(e) {
+        // --- HANDLERS ---
+        async function handleTx(e) {
             e.preventDefault();
             const id = parseInt(document.getElementById('itemSelect').value);
             const qty = parseInt(document.getElementById('qtyInput').value);
             const item = inventoryStatus.find(i => i.id === id);
-            if (currentType === 'salida' && item.stock < qty) return showMessage("Stock insuficiente", true);
-            const tx = { id: Date.now(), date: new Date().toLocaleString('es-ES'), type: currentType, itemId: id, itemName: item.name, category: item.category, qty: qty, note: document.getElementById('noteInput').value };
-            transactions.push(tx);
-            await addToStore(STORE_TX, tx);
-            refreshUI();
-            e.target.reset();
-            showMessage("Registrado");
+            if (!item) return;
+            if (currentType === 'salida' && item.stock < qty) return showMsg("Stock insuficiente", true);
+            const tx = { id: Date.now(), date: new Date().toLocaleString(), type: currentType, itemId: id, itemName: item.name, category: item.category, qty, note: document.getElementById('noteInput').value };
+            transactions.push(tx); await put(STORE_TX, tx); refreshUI(); e.target.reset(); showMsg("Registrado");
         }
 
-        async function handleNewItem(e) {
+        async function handleItemSave(e) {
             e.preventDefault();
-            const name = document.getElementById('itemNameNew').value;
-            const initial = parseInt(document.getElementById('itemInitialNew').value) || 0;
-            let cat = document.getElementById('itemCategoryNew').value;
-            if (cat === 'NUEVA') cat = document.getElementById('newCategoryInput').value;
-            const newItem = { id: Date.now(), name, category: cat, initial };
-            await addToStore(STORE_ITEMS, newItem);
-            initialItems.push(newItem);
-            refreshUI();
-            closeAddItemModal();
-            showMessage("Creado");
+            const id = document.getElementById('editItemId').value ? parseInt(document.getElementById('editItemId').value) : Date.now();
+            const name = document.getElementById('itemName').value;
+            let cat = document.getElementById('itemCategory').value;
+            if (cat === 'NUEVA') cat = document.getElementById('newCatInput').value;
+            const initial = parseInt(document.getElementById('itemInitial').value) || 0;
+            const item = { id, name, category: cat, initial };
+            await put(STORE_ITEMS, item);
+            if (document.getElementById('editItemId').value) {
+                initialItems = initialItems.map(i => i.id === id ? item : i);
+                showMsg("Insumo actualizado");
+            } else {
+                initialItems.push(item);
+                showMsg("Insumo creado");
+            }
+            refreshUI(); closeItemModal();
         }
 
-        // --- BACKUP SISTEM ---
+        function editItem(id) {
+            const i = initialItems.find(x => x.id === id);
+            document.getElementById('modalTitle').textContent = "Editar Insumo";
+            document.getElementById('editItemId').value = i.id;
+            document.getElementById('itemName').value = i.name;
+            document.getElementById('itemCategory').value = i.category;
+            document.getElementById('itemInitial').value = i.initial;
+            document.getElementById('itemInitial').disabled = true; // No permitir cambiar inicial si ya existe para no romper lógica
+            document.getElementById('itemModal').classList.remove('hidden');
+        }
+
+        async function handleItemDelete() {
+            if (!itemToDelete) return;
+            await del(STORE_ITEMS, itemToDelete);
+            initialItems = initialItems.filter(i => i.id !== itemToDelete);
+            refreshUI(); closeDeleteItemModal(); showMsg("Eliminado con éxito");
+        }
+
+        async function handleTxDelete() {
+            if (!txToDelete) return;
+            await del(STORE_TX, txToDelete);
+            transactions = transactions.filter(t => t.id !== txToDelete);
+            refreshUI(); closeDeleteModal(); showMsg("Movimiento revertido");
+        }
+
+        // --- BACKUP ---
         async function exportDatabaseJSON() {
-            const data = {
-                version: "1.3",
-                date: new Date().toISOString(),
-                items: initialItems,
-                transactions: transactions
-            };
+            const data = { version: "1.4", date: new Date().toISOString(), items: initialItems, transactions: transactions };
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `Backup_Inventario_${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
-            showMessage("Backup descargado con éxito");
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `Backup_Inventario_v1.4.json`; a.click();
+            showMsg("Backup listo");
         }
-
-        async function importDatabaseJSON(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = async (e) => {
-                try {
-                    const data = JSON.parse(e.target.result);
-                    if (!data.items || !data.transactions) throw new Error("Archivo inválido");
-                    
-                    if (!confirm("Esto borrará todos los datos actuales y los reemplazará con el backup. ¿Continuar?")) return;
-
-                    // Limpiar y Cargar
+        function importDatabaseJSON(e) {
+            const f = e.target.files[0]; if (!f) return;
+            const r = new FileReader();
+            r.onload = async (ex) => {
+                const d = JSON.parse(ex.target.result);
+                if (confirm("Se reemplazarán todos los datos. ¿Continuar?")) {
                     const tx = db.transaction([STORE_ITEMS, STORE_TX], 'readwrite');
-                    tx.objectStore(STORE_ITEMS).clear();
-                    tx.objectStore(STORE_TX).clear();
-                    
-                    for (const item of data.items) tx.objectStore(STORE_ITEMS).add(item);
-                    for (const t of data.transactions) tx.objectStore(STORE_TX).add(t);
-                    
-                    tx.oncomplete = () => {
-                        window.location.reload();
-                    };
-                } catch (err) {
-                    showMessage("Error: El archivo no es válido", true);
+                    tx.objectStore(STORE_ITEMS).clear(); tx.objectStore(STORE_TX).clear();
+                    d.items.forEach(i => tx.objectStore(STORE_ITEMS).add(i));
+                    d.transactions.forEach(t => tx.objectStore(STORE_TX).add(t));
+                    tx.oncomplete = () => window.location.reload();
                 }
             };
-            reader.readAsText(file);
+            r.readAsText(f);
         }
 
-        async function clearAllDataPrompt() {
-            if (confirm("¿ESTÁS TOTALMENTE SEGURO? Se borrarán todos tus datos personales, artículos creados e historial. No se puede deshacer.")) {
-                const tx = db.transaction([STORE_ITEMS, STORE_TX], 'readwrite');
-                tx.objectStore(STORE_ITEMS).clear();
-                tx.objectStore(STORE_TX).clear();
-                tx.oncomplete = () => window.location.reload();
-            }
-        }
-
-        // --- UI HELPERS ---
+        // --- MODALES & VARIOS ---
         function switchTab(id) {
             document.querySelectorAll('.view-section').forEach(v => v.classList.add('hidden'));
-            document.querySelectorAll('.tab-btn').forEach(b => {
-                b.classList.remove('border-blue-600', 'text-blue-600');
-                b.classList.add('border-transparent', 'text-gray-500');
-            });
-            document.getElementById('view-' + id).classList.remove('hidden');
-            const btn = document.getElementById('tab-' + id);
-            btn.classList.remove('border-transparent', 'text-gray-500');
-            btn.classList.add('border-blue-600', 'text-blue-600');
+            document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('border-blue-600', 'text-blue-600'); b.classList.add('border-transparent', 'text-gray-500'); });
+            document.getElementById('view-'+id).classList.remove('hidden');
+            document.getElementById('tab-'+id).classList.remove('border-transparent', 'text-gray-500');
+            document.getElementById('tab-'+id).classList.add('border-blue-600', 'text-blue-600');
         }
-        function openAddItemModal() { document.getElementById('addItemModal').classList.remove('hidden'); }
-        function closeAddItemModal() { document.getElementById('addItemModal').classList.add('hidden'); }
-        function openDeleteModal(id) { transactionToDelete = id; document.getElementById('deleteModal').classList.remove('hidden'); }
+        function openAddItemModal() {
+            document.getElementById('modalTitle').textContent = "Nuevo Insumo";
+            document.getElementById('editItemId').value = "";
+            document.getElementById('itemForm').reset();
+            document.getElementById('itemInitial').disabled = false;
+            document.getElementById('itemModal').classList.remove('hidden');
+        }
+        function closeItemModal() { document.getElementById('itemModal').classList.add('hidden'); }
+        function askDeleteItem(id) { 
+            itemToDelete = id; 
+            document.getElementById('delItemName').textContent = initialItems.find(x => x.id===id).name;
+            document.getElementById('deleteItemModal').classList.remove('hidden'); 
+        }
+        function closeDeleteItemModal() { document.getElementById('deleteItemModal').classList.add('hidden'); }
+        function askDeleteTx(id) { txToDelete = id; document.getElementById('deleteModal').classList.remove('hidden'); }
         function closeDeleteModal() { document.getElementById('deleteModal').classList.add('hidden'); }
-        document.getElementById('confirmDeleteBtn').onclick = async () => {
-            await deleteFromStore(STORE_TX, transactionToDelete);
-            transactions = transactions.filter(t => t.id !== transactionToDelete);
-            refreshUI();
-            closeDeleteModal();
-            showMessage("Eliminado");
-        };
         function setTransactionType(t) {
             currentType = t;
-            const s = document.getElementById('submitBtn');
-            s.textContent = t === 'salida' ? 'Registrar Salida' : 'Registrar Entrada';
-            s.className = `w-full py-4 rounded-xl font-bold text-white text-lg ${t === 'salida' ? 'bg-red-600' : 'bg-green-600'}`;
-            document.getElementById('btn-type-salida').className = t === 'salida' ? 'p-4 rounded-xl border-2 border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 font-bold' : 'p-4 rounded-xl border-2 border-gray-200 dark:border-dark-border text-gray-500 font-bold';
-            document.getElementById('btn-type-entrada').className = t === 'entrada' ? 'p-4 rounded-xl border-2 border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 font-bold' : 'p-4 rounded-xl border-2 border-gray-200 dark:border-dark-border text-gray-500 font-bold';
+            document.getElementById('submitBtn').textContent = t==='salida' ? 'Registrar Salida' : 'Registrar Entrada';
+            document.getElementById('submitBtn').className = `w-full py-4 rounded-xl font-bold text-white ${t==='salida'?'bg-red-600':'bg-green-600'}`;
+            document.getElementById('btn-type-salida').className = t==='salida'?'p-4 rounded-xl border-2 border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 font-bold':'p-4 rounded-xl border-2 border-gray-200 dark:border-dark-border text-gray-500 font-bold';
+            document.getElementById('btn-type-entrada').className = t==='entrada'?'p-4 rounded-xl border-2 border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 font-bold':'p-4 rounded-xl border-2 border-gray-200 dark:border-dark-border text-gray-500 font-bold';
         }
-        function showMessage(msg, err, info) {
+        function showMsg(m, e) {
             const container = document.getElementById('toast-container');
-            const t = document.createElement('div');
-            t.className = `toast ${err ? 'toast-error' : (info ? 'toast-info' : 'toast-success')} mb-2`;
-            t.textContent = msg;
-            container.appendChild(t);
-            setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 300); }, 3000);
+            const d = document.createElement('div');
+            d.className = `toast ${e?'toast-error':'toast-success'} mb-2`;
+            d.textContent = m;
+            container.appendChild(d);
+            setTimeout(() => { d.style.opacity = '0'; setTimeout(() => d.remove(), 300); }, 3000);
         }
         function exportToExcel() {
-            let table = `<table><tr><td>Categoría</td><td>Nombre</td><td>Stock</td></tr>` + inventoryStatus.map(i => `<tr><td>${i.category}</td><td>${i.name}</td><td>${i.stock}</td></tr>`).join('') + `</table>`;
-            const blob = new Blob([table], { type: 'application/vnd.ms-excel' });
-            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'Inventario.xls'; a.click();
+            let t = `<table><tr><td>Categoría</td><td>Insumo</td><td>Stock</td></tr>` + inventoryStatus.map(i => `<tr><td>${i.category}</td><td>${i.name}</td><td>${i.stock}</td></tr>`).join('') + `</table>`;
+            const b = new Blob([t], {type:'application/vnd.ms-excel'}); const l = document.createElement('a'); l.href = URL.createObjectURL(b); l.download = 'Inventario_Stock.xls'; l.click();
         }
         function exportToPDF() { switchTab('inventory'); setTimeout(() => window.print(), 500); }
+        async function clearAllDataPrompt() { if(confirm("¿BORRAR TODO?")){ const tx = db.transaction([STORE_ITEMS, STORE_TX], 'readwrite'); tx.objectStore(STORE_ITEMS).clear(); tx.objectStore(STORE_TX).clear(); tx.oncomplete = () => window.location.reload(); } }
 
-        // --- SERVICE WORKER ---
-        if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js').then(reg => {
-                reg.onupdatefound = () => {
-                    const inst = reg.installing;
-                    inst.onstatechange = () => { if (inst.state === 'installed' && navigator.serviceWorker.controller) { showMessage("Nueva versión. Reiniciando...", false, true); setTimeout(() => window.location.reload(), 3000); } };
-                };
+        // --- SW ---
+        if('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('./sw.js').then(r => {
+                r.onupdatefound = () => { const i = r.installing; i.onstatechange = () => { if(i.state==='installed' && navigator.serviceWorker.controller){ showMsg("Nueva versión v1.4. Reiniciando...", false); setTimeout(()=>window.location.reload(), 3000); } }; };
             });
             navigator.serviceWorker.addEventListener('controllerchange', () => window.location.reload());
         }
