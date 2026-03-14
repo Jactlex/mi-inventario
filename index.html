@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <!-- Meta tags ajustados para evitar el zoom al tocar botones y mejorar la experiencia en móviles -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Inventario Consultorio</title>
+    
+    <!-- Configuraciones especiales para App (iOS y Android) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Inventario">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#2563eb">
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-512.png">
+
+    <script src="https://cdn.tailwindcss.com"></script>    <style>
+        /* Estilos base para asegurar que la app se vea bien incluso si el CDN falla offline */
+        body { font-family: system-ui, -apple-system, sans-serif; background-color: #f9fafb; color: #1f2937; margin: 0; }
+        .hidden { display: none !important; }
+        .toast {
+            position: fixed; top: 20px; right: 20px; padding: 16px 24px; border-radius: 8px;
+            color: white; font-weight: bold; z-index: 1000;
+            transition: opacity 0.3s ease; box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .toast-success { background-color: #10b981; }
+        .toast-error { background-color: #ef4444; }
+
+        /* Fallback Styles (en caso de que falle Tailwind CSS) */
+        .bg-blue-600 { background-color: #2563eb; }
+        .bg-gray-50 { background-color: #f9fafb; }
+        .bg-white { background-color: #ffffff; }
+        .text-white { color: #ffffff; }
+        .text-gray-700 { color: #374151; }
+        .rounded-xl { border-radius: 0.75rem; }
+        .shadow-sm { box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05); }
+        .border { border-style: solid; border-width: 1px; }
+        .border-gray-100 { border-color: #f3f4f6; }
+        .p-4 { padding: 1rem; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .font-bold { font-weight: 700; }
+        .gap-3 { gap: 0.75rem; }
+        
+        /* ESTILOS EXCLUSIVOS PARA EL REPORTE PDF (IMPRESIÓN) */
+        @media print {
+            body { background-color: white !important; }
+            header, .tab-btn, #view-register, #view-history, .toast, .relative.w-full { display: none !important; }
+            #view-inventory { border: none !important; box-shadow: none !important; margin: 0 !important; padding: 0 !important; }
+            .bg-gray-50 { background-color: transparent !important; }
+            table { width: 100% !important; border-collapse: collapse !important; }
+            th, td { border: 1px solid #e5e7eb !important; padding: 10px !important; }
+            th { background-color: #f3f4f6 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bg-blue-100 { background-color: #dbeafe !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bg-red-100 { background-color: #fee2e2 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            .bg-yellow-100 { background-color: #fef9c3 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            #view-inventory::before {
+                content: "Reporte Oficial de Inventario";
+                display: block;
+                font-size: 24px;
+                font-weight: bold;
+                text-align: center;
+                margin-bottom: 20px;
+                color: #1e3a8a;
+            }
+            #view-inventory::after {
+                content: "Generado el: " attr(data-date);
+                display: block;
+                text-align: right;
+                font-size: 12px;
+                margin-top: 20px;
+                color: #6b7280;
+            }
+        }
+    </style>
+
+</head>
+<body class="min-h-screen bg-gray-50 flex flex-col">
+
+    <!-- Notificaciones (Toast) -->
+    <div id="toast-container"></div>
+
+    <!-- Encabezado -->
+    <header class="bg-blue-600 text-white shadow-md">
+        <div class="max-w-6xl mx-auto px-4 py-5 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
+                <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="16.5" y1="9.4" x2="7.5" y2="4.21"></line><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                <h1 class="text-xl sm:text-2xl font-bold">Gestión de Inventario</h1>
+            </div>
+            <div class="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                <button onclick="exportToExcel()" class="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-colors text-sm font-medium w-full sm:w-auto shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                    Descargar Excel
+                </button>
+                <button onclick="exportToPDF()" class="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg transition-colors text-sm font-medium w-full sm:w-auto shadow-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M10 12v6"></path><path d="M14 12v6"></path><path d="M8 12h8"></path></svg>
+                    Reporte PDF
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navegación de Pestañas -->
+    <div class="max-w-6xl mx-auto px-4 mt-4 w-full">
+        <div class="flex border-b border-gray-200 overflow-x-auto hide-scrollbar">
+            <button onclick="switchTab('inventory')" id="tab-inventory" class="tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 py-3 px-4 sm:px-6 whitespace-nowrap font-medium text-sm transition-colors border-b-2 border-blue-600 text-blue-600">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                Stock
+            </button>
+            <button onclick="switchTab('register')" id="tab-register" class="tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 py-3 px-4 sm:px-6 whitespace-nowrap font-medium text-sm transition-colors border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                Registrar
+            </button>
+            <button onclick="switchTab('history')" id="tab-history" class="tab-btn flex-1 sm:flex-none flex items-center justify-center gap-2 py-3 px-4 sm:px-6 whitespace-nowrap font-medium text-sm transition-colors border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                Historial
+            </button>
+        </div>
+    </div>
+
+    <!-- Contenido -->
+    <main class="max-w-6xl mx-auto px-4 py-6 w-full flex-1">
+        
+        <!-- PESTAÑA: INVENTARIO -->
+        <div id="view-inventory" class="view-section bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-4 border-b border-gray-100 bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-3">
+                <h2 class="text-lg font-semibold text-gray-700 w-full sm:w-auto">Estado del Stock</h2>
+                <div class="relative w-full sm:w-72">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-gray-400"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    </div>
+                    <input type="text" id="searchInput" oninput="renderInventory()" placeholder="Buscar insumo..." class="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                </div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse min-w-[600px]">
+                    <thead>
+                        <tr class="bg-white text-gray-500 text-xs uppercase tracking-wider border-b">
+                            <th class="p-4 font-medium">Categoría</th>
+                            <th class="p-4 font-medium">Insumo / Medicamento</th>
+                            <th class="p-4 font-medium text-center">Inicial</th>
+                            <th class="p-4 font-medium text-center text-green-600">Entradas</th>
+                            <th class="p-4 font-medium text-center text-red-600">Salidas</th>
+                            <th class="p-4 font-medium text-center text-blue-600">Stock Actual</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inventory-tbody" class="divide-y divide-gray-100">
+                        <!-- Llenado por JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PESTAÑA: REGISTRO -->
+        <div id="view-register" class="view-section hidden max-w-2xl mx-auto bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-6 border-b border-gray-100 bg-gray-50">
+                <h2 class="text-lg font-semibold text-gray-700">Registrar Movimiento</h2>
+                <p class="text-sm text-gray-500 mt-1">Registra aquí el consumo diario o las nuevas compras.</p>
+            </div>
+            
+            <form id="transactionForm" class="p-6 space-y-6">
+                <!-- Tipo de Movimiento -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Tipo de Movimiento</label>
+                    <div class="grid grid-cols-2 gap-4">
+                        <button type="button" id="btn-type-salida" onclick="setTransactionType('salida')" class="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-red-500 bg-red-50 text-red-700 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-2"><circle cx="12" cy="12" r="10"></circle><polyline points="8 12 12 16 16 12"></polyline><line x1="12" y1="8" x2="12" y2="16"></line></svg>
+                            <span class="font-semibold text-sm sm:text-base">Salida (Consumo)</span>
+                        </button>
+                        <button type="button" id="btn-type-entrada" onclick="setTransactionType('entrada')" class="flex flex-col items-center justify-center p-4 rounded-xl border-2 border-gray-200 text-gray-500 hover:border-green-200 transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mb-2"><circle cx="12" cy="12" r="10"></circle><polyline points="16 12 12 8 8 12"></polyline><line x1="12" y1="16" x2="12" y2="8"></line></svg>
+                            <span class="font-semibold text-sm sm:text-base">Entrada (Compra)</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Artículo -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Seleccionar Insumo / Medicamento</label>
+                    <select id="itemSelect" required class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white">
+                        <option value="">-- Selecciona un artículo --</option>
+                        <!-- Llenado por JS -->
+                    </select>
+                </div>
+
+                <!-- Cantidad y Notas -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Cantidad</label>
+                        <input type="number" id="qtyInput" min="1" value="1" required class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="sm:col-span-2">
+                        <label id="noteLabel" class="block text-sm font-medium text-gray-700 mb-2">Paciente / Motivo (Opcional)</label>
+                        <input type="text" id="noteInput" placeholder="Ej. Paciente Juan Pérez" class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
+
+                <!-- Botón de envío -->
+                <button type="submit" id="submitBtn" class="w-full py-4 rounded-xl font-bold text-white text-lg shadow-sm transition-colors bg-red-600 hover:bg-red-700">
+                    Registrar Consumo
+                </button>
+            </form>
+        </div>
+
+        <!-- PESTAÑA: HISTORIAL -->
+        <div id="view-history" class="view-section hidden bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div class="p-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+                <h2 class="text-lg font-semibold text-gray-700">Historial de Movimientos</h2>
+                <span id="historyCount" class="text-sm text-gray-500">0 movimientos</span>
+            </div>
+            
+            <div id="emptyHistory" class="hidden p-12 text-center text-gray-500 flex flex-col items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-gray-300 mb-4"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                <p>Aún no hay movimientos registrados.</p>
+            </div>
+            
+            <div class="overflow-x-auto" id="historyTableContainer">
+                <table class="w-full text-left border-collapse min-w-[600px]">
+                    <thead>
+                        <tr class="bg-white text-gray-500 text-xs uppercase tracking-wider border-b">
+                            <th class="p-4 font-medium">Fecha y Hora</th>
+                            <th class="p-4 font-medium">Tipo</th>
+                            <th class="p-4 font-medium">Artículo</th>
+                            <th class="p-4 font-medium">Cantidad</th>
+                            <th class="p-4 font-medium">Notas</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-tbody" class="divide-y divide-gray-100">
+                        <!-- Llenado por JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- DATOS INICIALES ---
+        const rawInitialItems = [
+            { category: 'Insumos Generales', name: 'Agua Oxigenada', initial: 2 },
+            { category: 'Insumos Generales', name: 'Alcohol 1l', initial: 1 },
+            { category: 'Insumos Generales', name: 'Algodón (Rollo)', initial: 1 },
+            { category: 'Insumos Generales', name: 'Algodón Bolita', initial: 1 },
+            { category: 'Insumos Generales', name: 'Bolsa Marrón', initial: 15 },
+            { category: 'Insumos Generales', name: 'Botas Quirúrgicas', initial: 4 },
+            { category: 'Insumos Generales', name: 'Centro de cama', initial: 1 },
+            { category: 'Insumos Generales', name: 'Curitas', initial: 40 },
+            { category: 'Insumos Generales', name: 'Guantes Azules', initial: 9 },
+            { category: 'Insumos Generales', name: 'Guantes Negros', initial: 4 },
+            { category: 'Insumos Generales', name: 'Hisopos (Aplicador)', initial: 1 },
+            { category: 'Insumos Generales', name: 'Paletas (Depresores linguales)', initial: 19 },
+            { category: 'Medicamentos y Soluciones', name: 'Ácido fólico 10mg', initial: 4 },
+            { category: 'Medicamentos y Soluciones', name: 'Ácido glicólico', initial: 1 },
+            { category: 'Medicamentos y Soluciones', name: 'Benucomplex B12 inyectable', initial: 3 },
+            { category: 'Medicamentos y Soluciones', name: 'Clorhidrato de procaína inyectable 1%', initial: 3 },
+            { category: 'Medicamentos y Soluciones', name: 'Dexametasona 8mg', initial: 3 },
+            { category: 'Medicamentos y Soluciones', name: 'Diclofenaco 75mg/3ml inyectable', initial: 3 },
+            { category: 'Medicamentos y Soluciones', name: 'Homeopharm (Homeopático oficinal)', initial: 2 },
+            { category: 'Medicamentos y Soluciones', name: 'Ketorolaco 30mg inyectable', initial: 2 },
+            { category: 'Medicamentos y Soluciones', name: 'Levofloxacina 100 ml solución para infusión', initial: 1 },
+            { category: 'Medicamentos y Soluciones', name: 'Novarin (Heparina 5ml)', initial: 1 },
+            { category: 'Medicamentos y Soluciones', name: 'Ranitidina 50mg', initial: 3 },
+            { category: 'Medicamentos y Soluciones', name: 'Solución cloruro de sodio 0.9% 500ml', initial: 1 },
+            { category: 'Medicamentos y Soluciones', name: 'Solución de bicarbonato de sodio al 10%', initial: 1 },
+            { category: 'Medicamentos y Soluciones', name: 'Solución Glucofisiológica 500ml', initial: 2 },
+            { category: 'Medicamentos y Soluciones', name: 'Solución inyectable (Ringer lactato) 500ml', initial: 2 },
+            { category: 'Medicamentos y Soluciones', name: 'Solución isotónica de cloruro de sodio al 0.9% (100ml)', initial: 5 },
+            { category: 'Medicamentos y Soluciones', name: 'Solución isotónica de cloruro de sodio al 0.9% (200 ml)', initial: 5 },
+            { category: 'Medicamentos y Soluciones', name: 'Sulfato de Magnesio inyectable', initial: 8 },
+            { category: 'Medicamentos y Soluciones', name: 'Tiocolchicósido Ampolla 4mg/2ml', initial: 3 },
+            { category: 'Medicamentos y Soluciones', name: 'Vitamina C', initial: 2 },
+            { category: 'Medicamentos y Soluciones', name: 'Vitamina C (Ácido Ascórbico) inyección 500mg/5ml', initial: 3 },
+            { category: 'Medicamentos y Soluciones', name: 'Vitamina C 100 ml (50,0g / 100 ml)', initial: 1 },
+            { category: 'Medicamentos y Soluciones', name: 'Yectafer Hierro 5%', initial: 2 },
+            { category: 'Materiales Médicos', name: 'Aguja de dermapen', initial: 7 },
+            { category: 'Materiales Médicos', name: 'Aguja Hipodérmica 19g x 1"', initial: 63 },
+            { category: 'Materiales Médicos', name: 'Aguja Hipodérmica 21g x 1 1/2"', initial: 99 },
+            { category: 'Materiales Médicos', name: 'Aguja Hipodérmica 21g x 1,5"', initial: 4 },
+            { category: 'Materiales Médicos', name: 'Aguja Hipodérmica 23g x 1 1/2"', initial: 16 },
+            { category: 'Materiales Médicos', name: 'Aguja Hipodérmica 27g x 1/2"', initial: 45 },
+            { category: 'Materiales Médicos', name: 'Aguja Hipodérmica 30g x 1/2"', initial: 27 },
+            { category: 'Materiales Médicos', name: 'Aguja vacutainer', initial: 9 },
+            { category: 'Materiales Médicos', name: 'Agujas para punción seca', initial: 30 },
+            { category: 'Materiales Médicos', name: 'Cánula nasal', initial: 1 },
+            { category: 'Materiales Médicos', name: 'Catéter Amarillo 24g', initial: 11 },
+            { category: 'Materiales Médicos', name: 'Catéter Azul', initial: 14 },
+            { category: 'Materiales Médicos', name: 'Catéter Rosado 20g', initial: 7 },
+            { category: 'Materiales Médicos', name: 'Catéter Verde', initial: 31 },
+            { category: 'Materiales Médicos', name: 'Jeringa 0.50 cc', initial: 6 },
+            { category: 'Materiales Médicos', name: 'Jeringa 1 ml', initial: 12 },
+            { category: 'Materiales Médicos', name: 'Jeringa 10 ml', initial: 24 },
+            { category: 'Materiales Médicos', name: 'Jeringa 3cc', initial: 26 },
+            { category: 'Materiales Médicos', name: 'Jeringa 5 ml', initial: 4 },
+            { category: 'Materiales Médicos', name: 'Jeringa 60 ml', initial: 5 },
+            { category: 'Materiales Médicos', name: 'Macro Gotero (Set de infusión Macro 1 ml)', initial: 31 },
+            { category: 'Materiales Médicos', name: 'Obturador', initial: 20 },
+            { category: 'Materiales Médicos', name: 'Scalp 23g', initial: 25 },
+            { category: 'Materiales Médicos', name: 'Scalp 21g', initial: 39 },
+            { category: 'Materiales Médicos', name: 'Sonda Nelaton #14', initial: 4 },
+            { category: 'Materiales Médicos', name: 'Tens Massager', initial: 1 },
+            { category: 'Materiales Médicos', name: 'Tubo tapa Amarilla', initial: 5 },
+            { category: 'Materiales Médicos', name: 'Tubo tapa Azul', initial: 20 },
+            { category: 'Materiales Médicos', name: 'Tubo tapa Morada', initial: 77 },
+            { category: 'Materiales Médicos', name: 'Tubo tapa Roja', initial: 14 },
+            { category: 'Materiales Médicos', name: 'Vendaje neuromuscular', initial: 1 }
+        ];
+
+        const initialItems = rawInitialItems.map((item, index) => ({ ...item, id: index + 1 }));
+        
+        // --- ESTADO LOCAL ---
+        let transactions = [];
+        let currentType = 'salida';
+        let inventoryStatus = [];
+
+        // --- PERSISTENCIA CON INDEXEDDB ---
+        const DB_NAME = 'InventarioDB';
+        const DB_VERSION = 1;
+        const STORE_NAME = 'transactions';
+        let db;
+
+        async function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+                request.onupgradeneeded = (e) => {
+                    db = e.target.result;
+                    if (!db.objectStoreNames.contains(STORE_NAME)) {
+                        db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+                    }
+                };
+                request.onsuccess = (e) => {
+                    db = e.target.result;
+                    resolve(db);
+                };
+                request.onerror = (e) => reject('Error abriendo IndexedDB');
+            });
+        }
+
+        async function getAllTransactions() {
+            return new Promise((resolve) => {
+                const transaction = db.transaction([STORE_NAME], 'readonly');
+                const store = transaction.objectStore(STORE_NAME);
+                const request = store.getAll();
+                request.onsuccess = () => resolve(request.result);
+            });
+        }
+
+        async function saveTransactionDB(newTx) {
+            return new Promise((resolve) => {
+                const transaction = db.transaction([STORE_NAME], 'readwrite');
+                const store = transaction.objectStore(STORE_NAME);
+                store.add(newTx);
+                transaction.oncomplete = () => resolve();
+            });
+        }
+
+        // --- INICIALIZACIÓN ---
+        window.onload = async () => {
+            await initDB();
+            
+            // Cargar de IndexedDB
+            transactions = await getAllTransactions();
+            
+            // Migración desde LocalStorage (si existe)
+            const oldData = localStorage.getItem('inventario_consultorio_data_v1');
+            if (oldData && transactions.length === 0) {
+                const migrated = JSON.parse(oldData);
+                for (const tx of migrated) {
+                    await saveTransactionDB(tx);
+                }
+                transactions = migrated;
+                // localStorage.removeItem('inventario_consultorio_data_v1'); // Opcional: borrar después de migrar
+                showMessage("Datos migrados exitosamente.");
+            }
+            
+            calculateInventory();
+            populateSelectOptions();
+            renderInventory();
+            renderHistory();
+
+            // Setup Form Listener
+            document.getElementById('transactionForm').addEventListener('submit', handleTransactionSubmit);
+        };
+
+        // --- FUNCIONES CORE ---
+        function calculateInventory() {
+            inventoryStatus = initialItems.map(item => {
+                const itemTransactions = transactions.filter(t => t.itemId === item.id);
+                const entradas = itemTransactions.filter(t => t.type === 'entrada').reduce((sum, t) => sum + t.qty, 0);
+                const salidas = itemTransactions.filter(t => t.type === 'salida').reduce((sum, t) => sum + t.qty, 0);
+                
+                return {
+                    ...item,
+                    entradas,
+                    salidas,
+                    stock: item.initial + entradas - salidas
+                };
+            });
+        }
+
+        function saveData() {
+            // Ya se guarda individualmente en saveTransactionDB al enviar el form
+            calculateInventory();
+            renderInventory();
+            renderHistory();
+            populateSelectOptions(); // Actualiza los stocks en el select
+        }
+
+        // --- UI Y RENDERIZADO ---
+        function showMessage(msg, isError = false) {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${isError ? 'toast-error' : 'toast-success'} mb-2`;
+            toast.textContent = msg;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function switchTab(tabId) {
+            // Ocultar todos
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('border-blue-600', 'text-blue-600');
+                el.classList.add('border-transparent', 'text-gray-500');
+            });
+
+            // Mostrar activo
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-${tabId}`);
+            activeBtn.classList.remove('border-transparent', 'text-gray-500');
+            activeBtn.classList.add('border-blue-600', 'text-blue-600');
+        }
+
+        function setTransactionType(type) {
+            currentType = type;
+            const btnSalida = document.getElementById('btn-type-salida');
+            const btnEntrada = document.getElementById('btn-type-entrada');
+            const submitBtn = document.getElementById('submitBtn');
+            const noteLabel = document.getElementById('noteLabel');
+            const noteInput = document.getElementById('noteInput');
+
+            if (type === 'salida') {
+                btnSalida.className = "flex flex-col items-center justify-center p-4 rounded-xl border-2 border-red-500 bg-red-50 text-red-700 transition-all";
+                btnEntrada.className = "flex flex-col items-center justify-center p-4 rounded-xl border-2 border-gray-200 text-gray-500 hover:border-green-200 transition-all";
+                submitBtn.className = "w-full py-4 rounded-xl font-bold text-white text-lg shadow-sm transition-colors bg-red-600 hover:bg-red-700";
+                submitBtn.textContent = "Registrar Consumo";
+                noteLabel.textContent = "Paciente / Motivo (Opcional)";
+                noteInput.placeholder = "Ej. Paciente Juan Pérez";
+            } else {
+                btnEntrada.className = "flex flex-col items-center justify-center p-4 rounded-xl border-2 border-green-500 bg-green-50 text-green-700 transition-all";
+                btnSalida.className = "flex flex-col items-center justify-center p-4 rounded-xl border-2 border-gray-200 text-gray-500 hover:border-red-200 transition-all";
+                submitBtn.className = "w-full py-4 rounded-xl font-bold text-white text-lg shadow-sm transition-colors bg-green-600 hover:bg-green-700";
+                submitBtn.textContent = "Registrar Nueva Compra";
+                noteLabel.textContent = "Proveedor / Lote (Opcional)";
+                noteInput.placeholder = "Ej. Farmacia Central";
+            }
+            populateSelectOptions(); // Refrescar el texto del select con el stock actualizado
+        }
+
+        function populateSelectOptions() {
+            const select = document.getElementById('itemSelect');
+            const currentValue = select.value;
+            select.innerHTML = '<option value="">-- Selecciona un artículo --</option>';
+            
+            const categories = [...new Set(inventoryStatus.map(item => item.category))];
+            
+            categories.forEach(category => {
+                const optgroup = document.createElement('optgroup');
+                optgroup.label = category;
+                
+                inventoryStatus.filter(i => i.category === category).forEach(item => {
+                    const option = document.createElement('option');
+                    option.value = item.id;
+                    option.textContent = currentType === 'salida' 
+                        ? `${item.name} (Stock: ${item.stock})` 
+                        : item.name;
+                    optgroup.appendChild(option);
+                });
+                
+                select.appendChild(optgroup);
+            });
+            
+            if(currentValue) select.value = currentValue;
+        }
+
+        function renderInventory() {
+            const tbody = document.getElementById('inventory-tbody');
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            
+            tbody.innerHTML = '';
+            
+            const filtered = inventoryStatus.filter(item => 
+                item.name.toLowerCase().includes(searchTerm) || 
+                item.category.toLowerCase().includes(searchTerm)
+            );
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-gray-500">No se encontraron resultados.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(item => {
+                let badgeClass = 'bg-blue-100 text-blue-700';
+                if (item.stock <= 2) badgeClass = 'bg-red-100 text-red-700';
+                else if (item.stock <= 5) badgeClass = 'bg-yellow-100 text-yellow-700';
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="p-4 text-sm text-gray-500">${item.category}</td>
+                        <td class="p-4 text-sm font-medium text-gray-800">${item.name}</td>
+                        <td class="p-4 text-sm text-center text-gray-500">${item.initial}</td>
+                        <td class="p-4 text-sm text-center font-medium text-green-600">+${item.entradas}</td>
+                        <td class="p-4 text-sm text-center font-medium text-red-600">-${item.salidas}</td>
+                        <td class="p-4 text-sm text-center">
+                            <span class="inline-flex items-center justify-center px-3 py-1 rounded-full font-bold ${badgeClass}">
+                                ${item.stock}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function renderHistory() {
+            const tbody = document.getElementById('history-tbody');
+            const countSpan = document.getElementById('historyCount');
+            const emptyState = document.getElementById('emptyHistory');
+            const tableContainer = document.getElementById('historyTableContainer');
+            
+            countSpan.textContent = `${transactions.length} movimientos`;
+            tbody.innerHTML = '';
+
+            if (transactions.length === 0) {
+                emptyState.classList.remove('hidden');
+                tableContainer.classList.add('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            tableContainer.classList.remove('hidden');
+
+            // Mostrar más recientes primero
+            const sorted = [...transactions].sort((a, b) => b.id - a.id);
+
+            sorted.forEach(tx => {
+                const isEntrada = tx.type === 'entrada';
+                const typeClass = isEntrada ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                const typeText = isEntrada ? 'ENTRADA' : 'SALIDA';
+                const sign = isEntrada ? '+' : '-';
+                const icon = isEntrada 
+                    ? `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="16 12 12 8 8 12"></polyline><line x1="12" y1="16" x2="12" y2="8"></line></svg>`
+                    : `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="8 12 12 16 16 12"></polyline><line x1="12" y1="8" x2="12" y2="16"></line></svg>`;
+
+                tbody.innerHTML += `
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="p-4 text-sm text-gray-500">${tx.date}</td>
+                        <td class="p-4">
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium ${typeClass}">
+                                ${icon} ${typeText}
+                            </span>
+                        </td>
+                        <td class="p-4 text-sm font-medium text-gray-800">
+                            ${tx.itemName}
+                            <span class="block text-xs font-normal text-gray-500">${tx.category}</span>
+                        </td>
+                        <td class="p-4 text-sm font-bold text-gray-800">${sign}${tx.qty}</td>
+                        <td class="p-4 text-sm text-gray-500">${tx.note || '-'}</td>
+                    </tr>
+                `;
+            });
+        }
+
+        // --- ACCIONES ---
+        function handleTransactionSubmit(e) {
+            e.preventDefault();
+            
+            const select = document.getElementById('itemSelect');
+            const qtyInput = document.getElementById('qtyInput');
+            const noteInput = document.getElementById('noteInput');
+            
+            const itemId = parseInt(select.value);
+            const qty = parseInt(qtyInput.value);
+            const note = noteInput.value.trim();
+
+            if (!itemId || isNaN(qty) || qty <= 0) return;
+
+            const selectedItem = inventoryStatus.find(i => i.id === itemId);
+
+            // Validar stock para salidas
+            if (currentType === 'salida' && selectedItem.stock < qty) {
+                showMessage(`Error: Solo quedan ${selectedItem.stock} unidades de ${selectedItem.name}.`, true);
+                return;
+            }
+
+            const newTx = {
+                id: Date.now(),
+                date: new Date().toLocaleString('es-ES'),
+                type: currentType,
+                itemId: selectedItem.id,
+                itemName: selectedItem.name,
+                category: selectedItem.category,
+                qty: qty,
+                note: note
+            };
+
+            transactions.push(newTx);
+            saveTransactionDB(newTx).then(() => {
+                saveData();
+                // Limpiar form
+                qtyInput.value = 1;
+                noteInput.value = '';
+                select.value = '';
+                
+                showMessage(`${currentType === 'salida' ? 'Consumo' : 'Ingreso'} registrado con éxito.`);
+            });
+        }
+
+        // NUEVO MÓDULO DE EXPORTACIÓN A EXCEL (FORMATEADO)
+        function exportToExcel() {
+            let tableHTML = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">`;
+            tableHTML += `<head><meta charset="utf-8"></head><body>`;
+            tableHTML += `<h2>Reporte de Inventario - ${new Date().toLocaleDateString('es-ES')}</h2>`;
+            tableHTML += `<table border="1" cellpadding="5" style="border-collapse: collapse; font-family: Arial, sans-serif;">`;
+            tableHTML += `<tr style="background-color: #2563eb; color: white;">
+                <th>Categoría</th><th>Insumo / Medicamento</th><th>Stock Inicial</th>
+                <th>Entradas</th><th>Salidas</th><th>Stock Actual</th>
+            </tr>`;
+
+            inventoryStatus.forEach(item => {
+                let stockColor = item.stock <= 2 ? '#fee2e2' : (item.stock <= 5 ? '#fef3c7' : '#ffffff');
+                let stockTextColor = item.stock <= 2 ? '#991b1b' : (item.stock <= 5 ? '#92400e' : '#1e40af');
+                
+                tableHTML += `<tr>
+                    <td>${item.category}</td>
+                    <td><b>${item.name}</b></td>
+                    <td align="center">${item.initial}</td>
+                    <td align="center" style="color: #16a34a;">+${item.entradas}</td>
+                    <td align="center" style="color: #dc2626;">-${item.salidas}</td>
+                    <td align="center" style="background-color: ${stockColor}; color: ${stockTextColor}; font-weight: bold;">
+                        ${item.stock}
+                    </td>
+                </tr>`;
+            });
+            
+            tableHTML += `</table></body></html>`;
+            
+            const blob = new Blob([tableHTML], { type: 'application/vnd.ms-excel' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Inventario_Consultorio_${new Date().toISOString().split('T')[0]}.xls`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showMessage("Descarga de Excel iniciada exitosamente.");
+        }
+
+        // NUEVO MÓDULO DE EXPORTACIÓN A PDF
+        function exportToPDF() {
+            // Ir a la pestaña de stock primero
+            switchTab('inventory');
+            
+            // Colocar la fecha actual para el reporte
+            const dateStr = new Date().toLocaleString('es-ES');
+            document.getElementById('view-inventory').setAttribute('data-date', dateStr);
+            
+            showMessage("Preparando reporte...");
+            
+            // Dar un pequeño retraso para asegurar que la vista cambie antes de abrir el diálogo
+            setTimeout(() => {
+                window.print();
+            }, 500);
+        }
+
+        // --- REGISTRO DE SERVICE WORKER PARA PWA ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                    .then(reg => console.log('Service Worker registrado', reg))
+                    .catch(err => console.error('Error al registrar Service Worker', err));
+            });
+        }
+    </script>
+</body>
+</html>
