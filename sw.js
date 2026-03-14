@@ -1,4 +1,4 @@
-const CACHE_NAME = 'inventario-v1.2'; // Nueva versión con Modo Oscuro
+const CACHE_NAME = 'inventario-v1.3'; // Nueva versión con Sistema de Backup
 const ASSETS = [
   './index.html',
   './manifest.json',
